@@ -1,6 +1,0 @@
- streamlit 
- pandas 
- numpy
-pickle
- matplotlib.pyplot as plt
- 
