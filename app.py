@@ -140,7 +140,7 @@ if predict_btn:
     st.write("")
     if prob >= threshold:
         st.error(f"🚨 **High Risk**: Probability exceeds your threshold of {threshold:.0%}")
-    elif prob >= (threshold - 0.2):
+    elif prob >= (threshold - 0.3):
         st.warning(f"🟡 **Medium Risk**: Probability is approaching the limit.")
     else:
         st.success(f"✅ **Low Risk**: Account is within safe limits.")
@@ -148,11 +148,35 @@ if predict_btn:
     # Charts
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("Top Risk Factors")
-        feat_imp = pd.DataFrame({"Feature": top_15, "Score": model.feature_importances_}).sort_values("Score")
-        fig, ax = plt.subplots()
-        ax.barh(feat_imp["Feature"], feat_imp["Score"], color="#3b82f6")
+        st.subheader("📊 Individual Risk Contribution")
+        
+        # 1. Calculate Local Contribution: (Scaled Value * Global Importance)
+        # This shows how MUCH this specific user's data pushed the score up
+        contributions = X_selected[0] * model.feature_importances_
+        
+        # 2. Create a DataFrame for plotting
+        dynamic_feat_df = pd.DataFrame({
+            "Feature": top_15,
+            "Contribution": contributions
+        }).sort_values("Contribution", ascending=True)
+
+        # 3. Plotting
+        fig, ax = plt.subplots(figsize=(8, 6))
+        # Use colors to show positive vs negative contribution
+        colors = ['#ef4444' if x > 0 else '#3b82f6' for x in dynamic_feat_df["Contribution"]]
+        
+        ax.barh(dynamic_feat_df["Feature"], dynamic_feat_df["Contribution"], color=colors)
+        ax.set_xlabel("Contribution to Risk Score")
+        ax.set_title("How your inputs affected this result")
+        
+        # Add a vertical line at zero
+        ax.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
+        
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
         st.pyplot(fig)
+        
+        st.caption("🔴 Red bars increase risk | 🔵 Blue bars decrease risk")
         
     with col2:
         st.subheader("Financial Summary")
